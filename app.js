@@ -312,25 +312,25 @@ async function renderHistory() {
 }
 
 /* ---------- 9. 解析フロー ---------- */
-async function fetchAndAnalyze(parsed) {
+async function fetchAndAnalyze(parsed, force) {
   if (BACKEND_URL) {
     const res = await fetch(BACKEND_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: parsed.originalUrl })
+      body: JSON.stringify({ url: parsed.originalUrl, force: !!force })
     });
     const data = await res.json();
     if (!res.ok || data.error) {
       throw new Error(data.error || `サーバーエラー(${res.status})`);
     }
-    return data; // { post, review }
+    return data; // { post, review, cached }
   }
   const post = await mockFetchPost(parsed);
   const review = await mockAnalyze(post);
   return { post, review };
 }
 
-async function runAnalysis(parsed) {
+async function runAnalysis(parsed, force) {
   showAnalysis();
   document.getElementById("a-handle").textContent = `@${parsed.username}`;
   document.getElementById("a-txt").textContent = "投稿本文を取得しています…";
@@ -347,15 +347,16 @@ async function runAnalysis(parsed) {
 
   try {
     setStep(0);
-    const resultPromise = fetchAndAnalyze(parsed);
+    const resultPromise = fetchAndAnalyze(parsed, force);
 
     await new Promise((r) => setTimeout(r, 400));
     setStep(1);
     await new Promise((r) => setTimeout(r, 400));
     setStep(2);
 
-    const { post, review } = await resultPromise;
+    const { post, review, cached } = await resultPromise;
     document.getElementById("a-txt").textContent = post.post_text;
+    if (cached) toast("以前の結果を再利用しました(API未使用)");
 
     setStep(3);
     await new Promise((r) => setTimeout(r, 250));
@@ -509,7 +510,7 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-reanalyze").addEventListener("click", () => {
     if (!currentRecord) return;
     const parsed = extractXUrl(currentRecord.originalUrl);
-    if (parsed) runAnalysis(parsed);
+    if (parsed) runAnalysis(parsed, true);
   });
 
   document.getElementById("btn-delete").addEventListener("click", async () => {
