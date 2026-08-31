@@ -219,7 +219,11 @@ const RATING_LABELS = [
 ];
 function stars(n) { return "★".repeat(n) + "☆".repeat(3 - n); }
 const VERIFY_MARK = { REALISTIC: ["○", "real"], CAUTION: ["△", "caution"], UNKNOWN: ["？", "unknown"] };
-const VERDICT_COLOR = { TRY: "var(--stamp-green)", CONDITIONAL: "var(--stamp-amber)", SKIP: "var(--stamp-red)" };
+const VERDICT_COLOR = {
+  TRY: { c: "#2F6B4A", bg: "rgba(47,107,74,0.08)" },
+  CONDITIONAL: { c: "#B4832B", bg: "rgba(180,131,43,0.08)" },
+  SKIP: { c: "#A8402F", bg: "rgba(168,64,47,0.08)" }
+};
 
 /* ---------- 7. レビュー詳細の描画 ---------- */
 let currentRecord = null;
@@ -233,7 +237,8 @@ function renderDetail(record) {
   document.getElementById("d-title").textContent = record.hist_title;
 
   const band = document.getElementById("d-verdict-band");
-  band.style.setProperty("--v", VERDICT_COLOR[record.verdict]);
+  band.style.setProperty("--v", VERDICT_COLOR[record.verdict].c);
+  band.style.setProperty("--v-bg", VERDICT_COLOR[record.verdict].bg);
   document.getElementById("d-verdict-icon").textContent = record.verdictIcon;
   document.getElementById("d-verdict-label").textContent = record.verdictLabel;
 
@@ -273,7 +278,7 @@ async function renderHistory() {
   }
   listEl.innerHTML = records.map((r) => `
     <div class="history-item" data-id="${r.id}">
-      <div class="stamp-mini" style="color:${VERDICT_COLOR[r.verdict]}">${r.verdictIcon}</div>
+      <div class="stamp-mini" style="color:${VERDICT_COLOR[r.verdict].c}">${r.verdictIcon}</div>
       <div class="hist-body">
         <p class="hist-title">${r.hist_title}</p>
         <p class="hist-meta">@${r.authorHandle} ・ ${new Date(r.createdAt).toLocaleDateString("ja-JP")}</p>
@@ -359,7 +364,7 @@ async function exportPDF() {
   btn.textContent = "生成中…";
   try {
     const target = document.getElementById("screen-detail").querySelector(".content");
-    const canvas = await html2canvas(target, { backgroundColor: "#EDEAE1", scale: 2 });
+    const canvas = await html2canvas(target, { backgroundColor: "#EDEAE1", scale: 2, useCORS: true });
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
     const pageW = 210, pageH = 297;
@@ -372,7 +377,7 @@ async function exportPDF() {
     toast("PDFを保存しました");
   } catch (err) {
     console.error(err);
-    toast("PDF生成に失敗しました");
+    toast("PDF生成に失敗: " + (err && err.message ? err.message : "不明なエラー"));
   } finally {
     btn.disabled = false;
     btn.textContent = "PDF保存";
