@@ -352,54 +352,67 @@ async function runAnalysis(parsed) {
   }
 }
 
-/* ---------- 10. PDF出力 (html2canvas + jsPDF) ---------- */
-async function exportPDF() {
+/* ---------- 10. Markdown出力 ---------- */
+function toMarkdown(r) {
+  const lines = [];
+  lines.push(`# ${r.hist_title}`);
+  lines.push("");
+  lines.push(`- 投稿者: @${r.authorHandle}`);
+  lines.push(`- 投稿日時: ${new Date(r.createdAt).toLocaleString("ja-JP")}`);
+  lines.push(`- 元投稿: ${r.originalUrl}`);
+  lines.push(`- 最終判定: ${r.verdictIcon} ${r.verdictLabel}`);
+  lines.push("");
+  lines.push("## 元投稿の主張");
+  lines.push("");
+  lines.push(r.summary);
+  lines.push("");
+  lines.push("## 3段階評価");
+  lines.push("");
+  lines.push("| 項目 | 評価 |");
+  lines.push("|---|---|");
+  RATING_LABELS.forEach(([key, label]) => {
+    lines.push(`| ${label} | ${stars(r.ratings[key])} |`);
+  });
+  lines.push("");
+  lines.push("## 本当にできる？");
+  lines.push("");
+  r.verification.forEach((v) => {
+    const [mark] = VERIFY_MARK[v.status];
+    lines.push(`- ${mark} **${v.title}**: ${v.detail}`);
+  });
+  lines.push("");
+  lines.push("## 投稿では見えにくいところ");
+  lines.push("");
+  r.hiddenIssues.forEach((h) => lines.push(`- ${h}`));
+  lines.push("");
+  lines.push("## 実際にやるなら");
+  lines.push("");
+  r.testSteps.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
+  lines.push("");
+  lines.push("## 結論");
+  lines.push("");
+  lines.push(r.conclusion);
+  lines.push("");
+  return lines.join("\n");
+}
+
+function exportMD() {
   if (!currentRecord) return;
-  if (typeof html2canvas === "undefined" || typeof window.jspdf === "undefined") {
-    toast("PDFライブラリの読み込みに失敗しました。通信環境を確認して開き直してください");
-    return;
-  }
-  const btn = document.getElementById("btn-pdf");
-  btn.disabled = true;
-  btn.textContent = "生成中…";
   try {
-    const target = document.getElementById("screen-detail").querySelector(".content");
-    const canvas = await html2canvas(target, { backgroundColor: "#EDEAE1", scale: 4, useCORS: true });
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-    const pageW = 210, pageH = 297;
-    const margin = 15;
-    const usableW = pageW - margin * 2;
-    const usableH = pageH - margin * 2;
-    const pxPerMM = canvas.width / usableW;
-    const pageHeightPx = Math.floor(usableH * pxPerMM);
-
-    let renderedY = 0;
-    let isFirstPage = true;
-    while (renderedY < canvas.height) {
-      const sliceH = Math.min(pageHeightPx, canvas.height - renderedY);
-      const pageCanvas = document.createElement("canvas");
-      pageCanvas.width = canvas.width;
-      pageCanvas.height = sliceH;
-      const ctx = pageCanvas.getContext("2d");
-      ctx.fillStyle = "#EDEAE1";
-      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-      ctx.drawImage(canvas, 0, renderedY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-
-      if (!isFirstPage) pdf.addPage();
-      pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", margin, margin, usableW, sliceH / pxPerMM);
-
-      renderedY += sliceH;
-      isFirstPage = false;
-    }
-    pdf.save(`xreview_${currentRecord.authorHandle}_${currentRecord.id}.pdf`);
-    toast("PDFを保存しました");
+    const md = toMarkdown(currentRecord);
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `xreview_${currentRecord.authorHandle}_${currentRecord.id}.md`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast("Markdownを保存しました");
   } catch (err) {
     console.error(err);
-    toast("PDF生成に失敗: " + (err && err.message ? err.message : "不明なエラー"));
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "PDF保存";
+    toast("MD生成に失敗: " + (err && err.message ? err.message : "不明なエラー"));
   }
 }
 
@@ -422,7 +435,7 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("btn-close-detail").addEventListener("click", showHome);
-  document.getElementById("btn-pdf").addEventListener("click", exportPDF);
+  document.getElementById("btn-md").addEventListener("click", exportMD);
 
   document.getElementById("btn-share").addEventListener("click", async () => {
     if (!currentRecord) return;
