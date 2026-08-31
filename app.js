@@ -363,7 +363,7 @@ async function runAnalysis(parsed, force) {
     setStep(4);
 
     const record = {
-      id: `${parsed.postId}-${Date.now()}`,
+      id: `${parsed.username}_${parsed.postId}`,
       createdAt: Date.now(),
       originalUrl: post.original_url,
       authorHandle: post.author_handle,

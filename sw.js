@@ -1,4 +1,4 @@
-const CACHE = "xcrawler-v6";
+const CACHE = "xcrawler-v11";
 const ASSETS = [
   "./index.html",
   "./styles.css",
