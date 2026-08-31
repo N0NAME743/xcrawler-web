@@ -12,6 +12,12 @@
 
 const BACKEND_URL = "https://xcrawler-api.ailab-yakumo89.workers.dev/"; // 例: "https://xcrawler-api.あなたのサブドメイン.workers.dev"
 
+function escapeHTML(s) {
+  const div = document.createElement("div");
+  div.textContent = s == null ? "" : s;
+  return div.innerHTML;
+}
+
 /* ---------- 1. URL抽出・正規化 (仕様書 3〜4章) ---------- */
 function extractXUrl(rawText) {
   if (!rawText) return null;
@@ -248,7 +254,12 @@ function renderDetail(record) {
   document.getElementById("d-verdict-icon").textContent = record.verdictIcon;
   document.getElementById("d-verdict-label").textContent = record.verdictLabel;
 
-  document.getElementById("d-claim").textContent = record.summary;
+  const claimEl = document.getElementById("d-claim");
+  if (record.translatedText) {
+    claimEl.innerHTML = `${escapeHTML(record.summary)}<br><br><span style="color:var(--ink-soft);font-size:11.5px;">(日本語訳)</span><br>${escapeHTML(record.translatedText)}`;
+  } else {
+    claimEl.textContent = record.summary;
+  }
 
   const ratingsEl = document.getElementById("d-ratings");
   ratingsEl.innerHTML = RATING_LABELS.map(([key, label]) => {
@@ -358,6 +369,7 @@ async function runAnalysis(parsed) {
       hist_title: review.theme,
       reviewTitle_theme: review.title,
       summary: review.summary,
+      translatedText: review.translated_text || null,
       ratings: review.ratings,
       verification: review.verification,
       hiddenIssues: review.hidden_issues,
@@ -390,6 +402,12 @@ function toMarkdown(r) {
   lines.push("## 元投稿の主張");
   lines.push("");
   lines.push(r.summary);
+  if (r.translatedText) {
+    lines.push("");
+    lines.push("**(日本語訳)**");
+    lines.push("");
+    lines.push(r.translatedText);
+  }
   lines.push("");
   lines.push("## 3段階評価");
   lines.push("");
