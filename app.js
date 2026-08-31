@@ -396,15 +396,25 @@ function toMarkdown(r) {
   return lines.join("\n");
 }
 
+function safeFilenamePart(s, maxLen) {
+  return s
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/…/g, "")
+    .trim()
+    .slice(0, maxLen);
+}
+
 function exportMD() {
   if (!currentRecord) return;
   try {
     const md = toMarkdown(currentRecord);
     const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
+    const dateStr = new Date(currentRecord.createdAt).toISOString().slice(0, 10).replace(/-/g, "");
+    const titlePart = safeFilenamePart(currentRecord.hist_title, 20);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `xreview_${currentRecord.authorHandle}_${currentRecord.id}.md`;
+    a.download = `xreview_${currentRecord.authorHandle}_${dateStr}_${titlePart}.md`;
     document.body.appendChild(a);
     a.click();
     a.remove();
