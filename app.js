@@ -350,6 +350,10 @@ async function runAnalysis(parsed) {
 /* ---------- 10. PDF出力 (html2canvas + jsPDF) ---------- */
 async function exportPDF() {
   if (!currentRecord) return;
+  if (typeof html2canvas === "undefined" || typeof window.jspdf === "undefined") {
+    toast("PDFライブラリの読み込みに失敗しました。通信環境を確認して開き直してください");
+    return;
+  }
   const btn = document.getElementById("btn-pdf");
   btn.disabled = true;
   btn.textContent = "生成中…";
