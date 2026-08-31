@@ -364,15 +364,34 @@ async function exportPDF() {
   btn.textContent = "生成中…";
   try {
     const target = document.getElementById("screen-detail").querySelector(".content");
-    const canvas = await html2canvas(target, { backgroundColor: "#EDEAE1", scale: 2, useCORS: true });
+    const canvas = await html2canvas(target, { backgroundColor: "#EDEAE1", scale: 4, useCORS: true });
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
     const pageW = 210, pageH = 297;
     const margin = 15;
     const usableW = pageW - margin * 2;
-    const imgH = (canvas.height * usableW) / canvas.width;
-    const finalH = Math.min(imgH, pageH - margin * 2);
-    pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", margin, margin, usableW, finalH);
+    const usableH = pageH - margin * 2;
+    const pxPerMM = canvas.width / usableW;
+    const pageHeightPx = Math.floor(usableH * pxPerMM);
+
+    let renderedY = 0;
+    let isFirstPage = true;
+    while (renderedY < canvas.height) {
+      const sliceH = Math.min(pageHeightPx, canvas.height - renderedY);
+      const pageCanvas = document.createElement("canvas");
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = sliceH;
+      const ctx = pageCanvas.getContext("2d");
+      ctx.fillStyle = "#EDEAE1";
+      ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      ctx.drawImage(canvas, 0, renderedY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+
+      if (!isFirstPage) pdf.addPage();
+      pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", margin, margin, usableW, sliceH / pxPerMM);
+
+      renderedY += sliceH;
+      isFirstPage = false;
+    }
     pdf.save(`xreview_${currentRecord.authorHandle}_${currentRecord.id}.pdf`);
     toast("PDFを保存しました");
   } catch (err) {
