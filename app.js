@@ -4,7 +4,13 @@
    ・URL抽出/正規化・履歴保存(IndexedDB)・画面遷移・PDF出力は実動作
    ============================================================ */
 
-const MOCK_MODE = true;
+/* ============================================================
+   Xクローラー君 — フロントエンド
+   ・BACKEND_URLが空の間はモックで動作
+   ・Cloudflare WorkerのURLを設定すると実際のFxTwitter取得+Gemini分析に切り替わる
+   ============================================================ */
+
+const BACKEND_URL = "https://xcrawler-api.ailab-yakumo89.workers.dev/"; // 例: "https://xcrawler-api.あなたのサブドメイン.workers.dev"
 
 /* ---------- 1. URL抽出・正規化 (仕様書 3〜4章) ---------- */
 function extractXUrl(rawText) {
@@ -295,6 +301,24 @@ async function renderHistory() {
 }
 
 /* ---------- 9. 解析フロー ---------- */
+async function fetchAndAnalyze(parsed) {
+  if (BACKEND_URL) {
+    const res = await fetch(BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: parsed.originalUrl })
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      throw new Error(data.error || `サーバーエラー(${res.status})`);
+    }
+    return data; // { post, review }
+  }
+  const post = await mockFetchPost(parsed);
+  const review = await mockAnalyze(post);
+  return { post, review };
+}
+
 async function runAnalysis(parsed) {
   showAnalysis();
   document.getElementById("a-handle").textContent = `@${parsed.username}`;
@@ -312,17 +336,18 @@ async function runAnalysis(parsed) {
 
   try {
     setStep(0);
-    const post = await mockFetchPost(parsed);
-    document.getElementById("a-txt").textContent = post.post_text;
+    const resultPromise = fetchAndAnalyze(parsed);
 
+    await new Promise((r) => setTimeout(r, 400));
     setStep(1);
     await new Promise((r) => setTimeout(r, 400));
-
     setStep(2);
-    const review = await mockAnalyze(post);
+
+    const { post, review } = await resultPromise;
+    document.getElementById("a-txt").textContent = post.post_text;
 
     setStep(3);
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 250));
     setStep(4);
 
     const record = {
@@ -428,6 +453,11 @@ function exportMD() {
 
 /* ---------- 11. 起動処理 ---------- */
 window.addEventListener("DOMContentLoaded", () => {
+  if (BACKEND_URL) {
+    const badge = document.getElementById("mock-badge");
+    if (badge) badge.style.display = "none";
+  }
+
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   }
