@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Xクローラー君</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#20241F">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="mock-badge">MOCKモード</div>
+
+<div id="app">
+
+  <!-- SCREEN 1: HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="appbar"><h1>Xクローラー君</h1><span class="mark">v0.1 web</span></div>
+    <div class="content">
+      <div class="home-hero">
+        <p><span class="em">Xの投稿URL</span>を貼り付けて検証</p>
+        <input type="text" id="url-input" class="url-input" placeholder="https://x.com/username/status/1234567890">
+        <button class="share-btn" id="btn-start">レビューを開始する</button>
+        <p class="hint">PWAとしてホーム画面に追加すると、Xアプリの共有メニューからも送れます</p>
+      </div>
+
+      <p class="section-label">最近のレビュー</p>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: ANALYSIS -->
+  <div class="screen" id="screen-analysis">
+    <div class="appbar"><h1>解析中</h1><span class="mark">STEP</span></div>
+    <div class="content">
+      <div class="post-preview">
+        <p class="handle" id="a-handle">@—</p>
+        <p class="txt" id="a-txt">取得を開始しています…</p>
+      </div>
+      <div class="steps" id="steps">
+        <div class="step" data-step="0"><div class="dot">1</div><div class="stxt"><p class="stitle">投稿を取得</p><p class="ssub">FxTwitter経由で本文を取得(モック)</p></div></div>
+        <div class="step" data-step="1"><div class="dot">2</div><div class="stxt"><p class="stitle">投稿を確認</p><p class="ssub">本文・投稿者を確認</p></div></div>
+        <div class="step" data-step="2"><div class="dot">3</div><div class="stxt"><p class="stitle">AI分析中</p><p class="ssub">主張と実行可能性を分離して評価(モック)</p></div></div>
+        <div class="step" data-step="3"><div class="dot">4</div><div class="stxt"><p class="stitle">レビュー生成</p><p class="ssub">固定フォーマットへ整形</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: REVIEW DETAIL -->
+  <div class="screen" id="screen-detail">
+    <div class="appbar"><h1>レビュー</h1><button class="mark" id="btn-close-detail">✕ 閉じる</button></div>
+    <div class="content">
+      <div class="post-meta">
+        <div class="row" id="d-author-row"><span>@—</span><span>—</span></div>
+        <div class="row"><a class="open-link" id="d-open-link" href="#" target="_blank" rel="noopener">元のポストを開く ↗</a></div>
+      </div>
+
+      <p class="rev-theme" id="d-theme">X「これで稼げる？」検証レビュー</p>
+      <h2 class="rev-title" id="d-title">—</h2>
+
+      <div class="verdict-band" id="d-verdict-band">
+        <div class="vc" id="d-verdict-icon">🟡</div>
+        <div><div class="vt" id="d-verdict-label">—</div><div class="vs">FINAL VERDICT</div></div>
+      </div>
+
+      <h2 class="blk">元投稿の主張</h2>
+      <div class="claim-box" id="d-claim">—</div>
+
+      <h2 class="blk">3段階評価</h2>
+      <div class="ratings" id="d-ratings"></div>
+
+      <h2 class="blk">本当にできる？</h2>
+      <div id="d-verify"></div>
+
+      <h2 class="blk">投稿では見えにくいところ</h2>
+      <ul class="hidden-list" id="d-hidden"></ul>
+
+      <h2 class="blk">実際にやるなら</h2>
+      <div class="plan-steps" id="d-plansteps"></div>
+
+      <h2 class="blk">結論</h2>
+      <div class="conclusion" id="d-conclusion">—</div>
+    </div>
+    <div class="actionbar">
+      <button id="btn-pdf">PDF保存</button>
+      <button id="btn-share">共有</button>
+      <button id="btn-reanalyze">再分析</button>
+      <button class="primary" id="btn-delete">削除</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
