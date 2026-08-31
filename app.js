@@ -372,7 +372,7 @@ async function runAnalysis(parsed) {
     setTimeout(() => renderDetail(record), 350);
   } catch (err) {
     console.error(err);
-    toast("解析に失敗しました");
+    toast("解析に失敗: " + (err && err.message ? err.message : "不明なエラー"));
     showHome();
   }
 }
